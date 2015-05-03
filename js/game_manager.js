@@ -34,26 +34,36 @@ GameManager.prototype.isGameTerminated = function () {
 // Set up the game
 GameManager.prototype.setup = function () {
   var previousState = this.storageManager.getGameState();
-
+  var queryData = queryString.parse(location.hash);
+  function updateHash() {
+    location.hash = '#d=' + NonRandom.data.numerator.add(NonRandom.data.denominator).toString(64).substring(1);
+  }
   // Reload the game from a previous game if present
-  if (previousState) {
+  if (previousState && (!queryData.d || previousState.sameGameCheck === queryData.d.substring(0,6))) {
     this.grid        = new Grid(previousState.grid.size,
                                 previousState.grid.cells); // Reload grid
     this.score       = previousState.score;
     this.over        = previousState.over;
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
+    NonRandom        = new FractionData(new Fraction(previousState.NonRandom));
+    updateHash();
   } else {
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
-
+    if (queryData.d) {
+      NonRandom = new FractionData(new Fraction("A." + queryData.d, "B", 64));
+      updateHash();
+    } else {
+      NonRandom = FractionData.createRandomData(2048 * 6);
+      updateHash();
+    }
     // Add the initial tiles
     this.addStartTiles();
   }
-
   // Update the actuator
   this.actuate();
 };
@@ -68,7 +78,7 @@ GameManager.prototype.addStartTiles = function () {
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    var value = Math.random() < 0.9 ? 2 : 4;
+    var value = NonRandom.getData(10).number[0] < 9 ? 2 : 4;
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -105,7 +115,9 @@ GameManager.prototype.serialize = function () {
     score:       this.score,
     over:        this.over,
     won:         this.won,
-    keepPlaying: this.keepPlaying
+    keepPlaying: this.keepPlaying,
+    NonRandom:   NonRandom.data,
+    sameGameCheck: queryString.parse(location.hash).d.substring(0, 6)
   };
 };
 

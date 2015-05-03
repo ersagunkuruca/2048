@@ -1,3 +1,4 @@
 [submodule "js/fraction"]
 	path = js/fraction
 	url = git@github.com:ersagunkuruca/fraction.git
+	branch = master
